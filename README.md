@@ -9,6 +9,7 @@ This repo contains a V2V communication protocol between autonomous RCs with a fo
 3. ##### [License](https://github.com/DIT168-V2V-responsibles/v2v-protocol#3-license)
 4. ##### [Requests](https://github.com/DIT168-V2V-responsibles/v2v-protocol#4-protocol-requests)
 5. ##### [CID ranges](https://github.com/DIT168-V2V-responsibles/v2v-protocol#5-cid-ranges)
+6. ##### [Emergency Scenarios](https://github.com/DIT168-V2V-responsibles/v2v-protocol#5-emergency-scenarios)
 
 ### 1. Installation
 To install libcluon please refer to the installation guide [Libcluon](https://github.com/chrberger/libcluon).
@@ -98,3 +99,16 @@ For the purposes of the DIT168 course, the OD4 session [CIDs](https://chrberger.
 |   13  | 240-249 |
 
 The Announce Presence messages between the groups will be broadcast to an OD4 session with CID **250**.
+
+### 6. Emergency Scenarios
+
+As part of the protocol the V2V managers have established a number of emergency scenarios. The purpose of this section is to describe the expected behaviour exhibited by the miniature cars if or when they encounter abnormal or problematic protocol behaviour. 
+
+#### 6.1 Connection to Leader Lost
+The leader vehicle sends it's status update, Leader Status, to the follower every 125ms. The problematic behaviour has been defined as the follower failing to receive the aforementioned request 3 times i.e. no leader update in 375ms. In this scenario the expected behaviour is for the follower to return to it's pre-platooning state, meaning to stop moving.
+
+#### 6.2 Connection to Follower Lost
+The follower vehicle sends Follower Status to the leader every 500ms. If the leading vehicle has not received this request in 1s or over, the leader can drop it's connection to the follower and stop sending Leader Status.
+
+#### 6.3 Object Detected 
+The project groups have agreed to use the front ultrasonic sensor for collision prevention. It was decided that if the sensor readings indicate and object 10cm in front of the car, the car will stop, to avoid damaging the nice 3D-printed car. This behaviour is expected from both the leading and the following vehicles.
