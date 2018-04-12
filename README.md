@@ -76,7 +76,7 @@ This message includes information about a leading vehicle and contains informati
 #### 4.3 Follower Specific Requests
 
 ##### Status Update
-This message lets the leading car know that this follower is still following. The FollowerStatus is sent in regular intervals of 500ms and does not expect a response.
+This message lets the leading car know that this follower is still following. The FollowerStatus is sent in regular intervals of 125ms and does not expect a response.
 
 ### 5. CID ranges
 
@@ -108,7 +108,7 @@ As part of the protocol the V2V managers have established a number of emergency 
 The leader vehicle sends it's status update, Leader Status, to the follower every 125ms. The problematic behaviour has been defined as the follower failing to receive the aforementioned request 3 times i.e. no leader update in 375ms. In this scenario the expected behaviour is for the follower to return to it's pre-platooning state, meaning to stop moving.
 
 #### 6.2 Connection to Follower Lost
-The follower vehicle sends Follower Status to the leader every 500ms. If the leading vehicle has not received this request in 1s or over, the leader can drop it's connection to the follower and stop sending Leader Status.
+The follower vehicle sends Follower Status to the leader every 125ms. If the leading vehicle has not received this request in 375ms or over, the leader can drop it's connection to the follower and stop sending Leader Status.
 
 #### 6.3 Object Detected 
 The project groups have agreed to use the front ultrasonic sensor for collision prevention. It was decided that if the sensor readings indicate and object 10cm in front of the car, the car will stop, to avoid damaging the nice 3D-printed car. This behaviour is expected from both the leading and the following vehicles.
