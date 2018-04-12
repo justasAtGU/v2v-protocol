@@ -36,7 +36,7 @@ Finally compile:
 ```
 make
 ```
-**Note:** The protocol needs to be adapted to the specific needs of your group. It is **not** a complete microservice and you should therefore turn it into one if that's what you want to use it for.
+**Note:** The protocol needs to be adapted to the specific needs of your group. It is **not** a complete microservice and you should therefore turn it into one if that's how you want to use it.
 
 ### 3. License
 The protocol is licenced under GNU Lesser General Public License version 3.0. This is due to the incorporation of "libcluon" library as part of the project. Libcluon offers their software under LGPLv 3.0 licence and due to the copyleft nature, anyone who distribute its code or derivative works, are required to make the source available under the same terms. 
