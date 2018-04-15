@@ -1,3 +1,6 @@
+/********************************************************/
+/** V2V Protocol specific messages **********************/
+/********************************************************/
 message AnnouncePresence [id = 1001] {
   string vehicleIp [id = 1];
   string groupId [id = 3];
@@ -20,4 +23,36 @@ message LeaderStatus [id = 2001] {
 }
 
 message FollowerStatus [id = 3001] {
+}
+
+
+/********************************************************/
+/** Internal Messages ***********************************/
+/********************************************************/
+message opendlv.proxy.AccelerationReading [id = 1030] {
+  float accelerationX [id = 1];
+  float accelerationY [id = 2];
+  float accelerationZ [id = 3];
+}
+
+message opendlv.proxy.PedalPositionReading [id = 1041] {
+  float percent [id = 1];
+}
+
+message opendlv.proxy.GroundSteeringReading [id = 1045] {
+  float steeringAngle [id = 1];
+}
+
+message opendlv.proxy.GroundSpeedReading [id = 1046] {
+  float groundSpeed [id = 1];
+}
+
+message UltrasonicFront [id = 2201] {
+  float readingCm [id = 1];
+}
+
+message readingsIMU[id = 2202] {
+  uint8 readingDistanceTraveled [id = 1];
+  float readingSteeringAngle [id = 2];
+  float readingSpeed [id = 3];	
 }

@@ -13,6 +13,8 @@ int main() {
         std::cout << "(4) StopFollow" << std::endl;
         std::cout << "(5) LeaderStatus" << std::endl;
         std::cout << "(6) FollowerStatus" << std::endl;
+        std::cout << "(7) ULTRA" << std::endl;
+        std::cout << "(8) IMU" << std::endl;
         std::cout << "(#) Nothing, just quit." << std::endl;
         std::cout << ">> ";
         std::cin >> choice;
@@ -38,6 +40,8 @@ int main() {
             }
             case 5: v2vService->leaderStatus(50, 0, 100); break;
             case 6: v2vService->followerStatus(); break;
+            case 7: v2vService->ultrasonicReadings(); break;
+            case 8: v2vService->imuReadings(); break;
             default: exit(0);
         }
     }
@@ -47,6 +51,7 @@ int main() {
  * Implementation of the V2VService class as declared in V2VService.hpp
  */
 V2VService::V2VService() {
+    
     /*
      * The broadcast field contains a reference to the broadcast channel which is an OD4Session. This is where
      * AnnouncePresence messages will be received.
@@ -63,6 +68,37 @@ V2VService::V2VService() {
                                 << ap.groupId() << "'!" << std::endl;
 
                       presentCars[ap.groupId()] = ap.vehicleIp();
+
+                      break;
+                  }
+                  default: std::cout << "¯\\_(ツ)_/¯" << std::endl;
+              }
+          });
+
+    internal =
+        std::make_shared<cluon::OD4Session>(INTERNAL_CHANNEL,
+          [this](cluon::data::Envelope &&envelope) noexcept {
+              std::cout << "[OD4] ";
+    	      std::shared_ptr<V2VService> v2vService = std::make_shared<V2VService>();
+
+              switch (envelope.dataType()) {
+                  case ULTRASONIC_FRONT: {
+                      UltrasonicFront uf = cluon::extractMessage<UltrasonicFront>(std::move(envelope));
+                      std::cout << "received Front Ultrasonic Reading: "
+                                << uf.readingCm() << "cm" << std::endl;
+
+                      break;
+                  }
+		  case IMU: {
+                      readingsIMU imu = cluon::extractMessage<readingsIMU>(std::move(envelope));
+                      std::cout << "received IMU Readings: "
+                                << imu.readingSpeed() << "speed"
+				<< imu.readingSteeringAngle() << "steering"
+				<< imu.readingDistanceTraveled() << "distance" 
+				<< std::endl;
+		      
+		      v2vService->leaderStatus(imu.readingSpeed(), imu.readingSteeringAngle(),
+		      	imu.readingDistanceTraveled());
 
                       break;
                   }
@@ -219,7 +255,7 @@ void V2VService::followerStatus() {
  * @param distanceTraveled - distance traveled since last reading
  */
 void V2VService::leaderStatus(float speed, float steeringAngle, uint8_t distanceTraveled) {
-    if (followerIp.empty()) return;
+    if (followerIp.empty()) std::cout << "hej monika, du har inget follower" << std::endl; return;
     LeaderStatus leaderStatus;
     leaderStatus.timestamp(getTime());
     leaderStatus.speed(speed);
@@ -227,6 +263,23 @@ void V2VService::leaderStatus(float speed, float steeringAngle, uint8_t distance
     leaderStatus.distanceTraveled(distanceTraveled);
     toFollower->send(encode(leaderStatus));
 }
+
+void V2VService::ultrasonicReadings() {
+    UltrasonicFront uf;
+    uf.readingCm(14);
+    internal->send(uf); /* JUST FOR TESTING*/
+}
+
+/* JUST FOR TESTING*/
+void V2VService::imuReadings() {
+    readingsIMU imu;
+    imu.readingDistanceTraveled(1);
+    imu.readingSteeringAngle(2);
+    imu.readingSpeed(3);
+    //toFollower->send(encode(imu))
+    internal->send(imu); /* JUST FOR TESTING*/
+}
+
 
 /**
  * Gets the current time.
