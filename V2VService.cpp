@@ -78,27 +78,33 @@ V2VService::V2VService() {
     internal =
         std::make_shared<cluon::OD4Session>(INTERNAL_CHANNEL,
           [this](cluon::data::Envelope &&envelope) noexcept {
-              std::cout << "[OD4] ";
 
+	      // Used to halt message sending
+	      auto haltSend{[]() -> bool{
+                  return false;
+	      }};
+
+	      // Transfer internal messages to other cars
+              std::cout << "[OD4] ";
               switch (envelope.dataType()) {
                   case ULTRASONIC_FRONT: {
                       UltrasonicFront uf = cluon::extractMessage<UltrasonicFront>(std::move(envelope));
                       std::cout << "received Front Ultrasonic Reading: "
                                 << uf.readingCm() << "cm" << std::endl;
 
+		      // Block Sending
+ 		      cluon::OD4Session od4{INTERNAL_CHANNEL};
+		      od4.timeTrigger(9, haltSend);	
                       break;
                   }
 		  case IMU: {
-                      readingsIMU imu = cluon::extractMessage<readingsIMU>(std::move(envelope));
-                      //std::cout << "received IMU Readings: "
-                          //      << imu.readingSpeed() << "speed"
-			//	<< imu.readingSteeringAngle() << "steering"
-				//<< imu.readingDistanceTraveled() << "distance" 
-				//<< std::endl;
-		      
-		      leaderStatus(imu.readingSpeed(), imu.readingSteeringAngle(),
-		      	imu.readingDistanceTraveled());
+		      readingsIMU imu = cluon::extractMessage<readingsIMU>(std::move(envelope));
+		      // Send IMU data to other cars
+		      leaderStatus(imu.readingSpeed(), imu.readingSteeringAngle(), imu.readingDistanceTraveled());
 
+		      // Block Sending
+ 		      cluon::OD4Session od4{INTERNAL_CHANNEL};
+		      od4.timeTrigger(9, haltSend);	
                       break;
                   }
                   default: std::cout << "¯\\_(ツ)_/¯" << std::endl;
@@ -127,6 +133,7 @@ V2VService::V2VService() {
                        if (followerIp.empty()) {
                            unsigned long len = sender.find(':');    // If no, add the requester to known follower slot
                            followerIp = sender.substr(0, len);      // and establish a sending channel.
+
                            toFollower = std::make_shared<cluon::UDPSender>(followerIp, DEFAULT_PORT);
  		           // Connections from follower to leader established
 		           // Reset time when last leader status update received
@@ -181,7 +188,11 @@ V2VService::V2VService() {
                        unsigned long len = sender.find(':');
                        LeaderStatus leaderStatus = decode<LeaderStatus>(msg.second);
                        std::cout << "received '" << leaderStatus.LongName()
-                                 << "' from '" << sender << "'!" << std::endl;
+                                 << "' from '" << sender << "'!" 
+				 << "' Speed '" << leaderStatus.speed() << "'!" 
+				 << "' Angle '" << leaderStatus.steeringAngle() << "'!" 
+				 << "' Distance '" << leaderStatus.distanceTraveled() << "'!" 
+				 << std::endl;
 
                        if(carConnectionLost(timestamp, LEADER_STATUS)){
 			   std::cout << "Leader lost!" << std::endl;
@@ -197,6 +208,9 @@ V2VService::V2VService() {
            });
 }
 
+void V2VService::wait(){
+   
+}
 /**
  * This function sends an AnnouncePresence (id = 1001) message on the broadcast channel. It will contain information
  * about the sending vehicle, including: IP, port and the group identifier.
@@ -275,7 +289,7 @@ void V2VService::followerStatus() {
  * @param distanceTraveled - distance traveled since last reading
  */
 void V2VService::leaderStatus(float speed, float steeringAngle, uint8_t distanceTraveled) {
-    if (followerIp.empty()) std::cout << "hej monika, du har inget follower" << std::endl; return;
+    if (followerIp.empty()) return;
     LeaderStatus leaderStatus;
     leaderStatus.timestamp(getTime());
     leaderStatus.speed(speed);
@@ -300,10 +314,10 @@ bool V2VService::carConnectionLost(const auto timestamp, int requestId) {
         diff = difftime(timestamp, leaderFreq);
 	leaderFreq = timestamp;
     }
-
+    
+    std::cout << "Time between status updates: " << diff << std::endl;
     // Missed 3 intervals
     if (diff >= 375){
-   	std::cout << "Time between status update: " << diff << std::endl;
 
 	return true;
     }
@@ -323,8 +337,10 @@ void V2VService::imuReadings() {
     imu.readingDistanceTraveled(1);
     imu.readingSteeringAngle(2);
     imu.readingSpeed(3);
-    //toFollower->send(encode(imu))
+    while(1){
+
     internal->send(imu); /* JUST FOR TESTING*/
+    }
 }
 
 

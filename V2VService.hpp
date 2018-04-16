@@ -33,7 +33,7 @@ static const int FOLLOWER_STATUS 	= 3001;
 /********************************************************/
 /** Dash specific communication constants ***************/
 /********************************************************/
-static const int INTERNAL_CHANNEL 	= 120;
+static const int INTERNAL_CHANNEL 	= 122;
 
 static const int ACCELERATION 		= 1030;
 static const int PEDAL_POSITION 	= 1041;
@@ -55,6 +55,7 @@ public:
     void leaderStatus(float speed, float steeringAngle, uint8_t distanceTraveled);
     void followerStatus();
     bool carConnectionLost(const auto timestamp, int request);
+    void wait();
     void ultrasonicReadings();
     void imuReadings();
 
