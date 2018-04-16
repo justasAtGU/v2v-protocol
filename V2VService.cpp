@@ -113,6 +113,7 @@ V2VService::V2VService() {
     incoming =
         std::make_shared<cluon::UDPReceiver>("0.0.0.0", DEFAULT_PORT,
            [this](std::string &&data, std::string &&sender, std::chrono::system_clock::time_point &&ts) noexcept {
+	       const auto timestamp(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
                std::cout << "[UDP] ";
                std::pair<int16_t, std::string> msg = extract(data);
 
@@ -157,9 +158,10 @@ V2VService::V2VService() {
                    case FOLLOWER_STATUS: {
                        FollowerStatus followerStatus = decode<FollowerStatus>(msg.second);
                        std::cout << "received '" << followerStatus.LongName()
-                                 << "' from '" << sender << "'!" << std::endl;
+                                 << "' from '" << sender << "'! " << std::endl;
 
-                       /* TODO: implement lead logic (if applicable) */
+		       leaderFreq = timestamp;
+                       carConnectionLost(timestamp);
 
                        break;
                    }
@@ -262,6 +264,23 @@ void V2VService::leaderStatus(float speed, float steeringAngle, uint8_t distance
     leaderStatus.steeringAngle(steeringAngle);
     leaderStatus.distanceTraveled(distanceTraveled);
     toFollower->send(encode(leaderStatus));
+}
+
+void V2VService::carConnectionLost(const auto timestamp, int request) {
+    double diff;
+    if (YOUR_CAR_IP == leaderIp) {
+    	diff = difftime(timestamp, leaderFreq);
+	leaderFreq = timestamp;
+    }
+    if (YOUR_CAR_IP == followerIp) {
+        diff = difftime(timestamp, followerFreq);
+	followerFreq = timestamp;
+    }
+
+    std::cout << "Time between status update: " << diff
+    //<< std::put_time(std::localtime(&seconds), "%X") 
+    << std::endl;
+
 }
 
 void V2VService::ultrasonicReadings() {
