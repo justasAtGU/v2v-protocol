@@ -129,6 +129,10 @@ V2VService::V2VService() {
                            unsigned long len = sender.find(':');    // If no, add the requester to known follower slot
                            followerIp = sender.substr(0, len);      // and establish a sending channel.
                            toFollower = std::make_shared<cluon::UDPSender>(followerIp, DEFAULT_PORT);
+ 		           // Connections from follower to leader established
+		           // Reset time when last leader status update received
+		           followerFreq = std::chrono::system_clock::now().time_since_epoch().count();
+
                            followResponse();
                        }
                        break;
@@ -139,9 +143,9 @@ V2VService::V2VService() {
                                  << "' from '" << sender << "'!" << std::endl;
 
 		       // Connections from follower to leader established
-		       // Reset time when last follower/leader status update received
+		       // Reset time when last leader status update received
 		       leaderFreq = std::chrono::system_clock::now().time_since_epoch().count();
-		       followerFreq = std::chrono::system_clock::now().time_since_epoch().count();
+
                        break;
                    }
                    case STOP_FOLLOW: {
@@ -309,7 +313,7 @@ bool V2VService::carConnectionLost(const auto timestamp, int requestId) {
 }
 
 void V2VService::ultrasonicReadings() {
-    UltrasonicFront uf;
+    UltrasonicFront uf;cd 
     uf.readingCm(14);
     internal->send(uf); /* JUST FOR TESTING*/
 }
