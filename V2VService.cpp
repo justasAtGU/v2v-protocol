@@ -79,7 +79,6 @@ V2VService::V2VService() {
         std::make_shared<cluon::OD4Session>(INTERNAL_CHANNEL,
           [this](cluon::data::Envelope &&envelope) noexcept {
               std::cout << "[OD4] ";
-    	      std::shared_ptr<V2VService> v2vService = std::make_shared<V2VService>();
 
               switch (envelope.dataType()) {
                   case ULTRASONIC_FRONT: {
@@ -91,13 +90,13 @@ V2VService::V2VService() {
                   }
 		  case IMU: {
                       readingsIMU imu = cluon::extractMessage<readingsIMU>(std::move(envelope));
-                      std::cout << "received IMU Readings: "
-                                << imu.readingSpeed() << "speed"
-				<< imu.readingSteeringAngle() << "steering"
-				<< imu.readingDistanceTraveled() << "distance" 
-				<< std::endl;
+                      //std::cout << "received IMU Readings: "
+                          //      << imu.readingSpeed() << "speed"
+			//	<< imu.readingSteeringAngle() << "steering"
+				//<< imu.readingDistanceTraveled() << "distance" 
+				//<< std::endl;
 		      
-		      v2vService->leaderStatus(imu.readingSpeed(), imu.readingSteeringAngle(),
+		      leaderStatus(imu.readingSpeed(), imu.readingSteeringAngle(),
 		      	imu.readingDistanceTraveled());
 
                       break;
@@ -313,7 +312,7 @@ bool V2VService::carConnectionLost(const auto timestamp, int requestId) {
 }
 
 void V2VService::ultrasonicReadings() {
-    UltrasonicFront uf;cd 
+    UltrasonicFront uf;
     uf.readingCm(14);
     internal->send(uf); /* JUST FOR TESTING*/
 }
