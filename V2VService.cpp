@@ -114,6 +114,7 @@ V2VService::V2VService() {
         std::make_shared<cluon::UDPReceiver>("0.0.0.0", DEFAULT_PORT,
            [this](std::string &&data, std::string &&sender, std::chrono::system_clock::time_point &&ts) noexcept {
 	       const auto timestamp(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+               
                std::cout << "[UDP] ";
                std::pair<int16_t, std::string> msg = extract(data);
 
@@ -136,6 +137,11 @@ V2VService::V2VService() {
                        FollowResponse followResponse = decode<FollowResponse>(msg.second);
                        std::cout << "received '" << followResponse.LongName()
                                  << "' from '" << sender << "'!" << std::endl;
+
+		       // Connections from follower to leader established
+		       // Reset time when last follower/leader status update received
+		       leaderFreq = std::chrono::system_clock::now().time_since_epoch().count();
+		       followerFreq = std::chrono::system_clock::now().time_since_epoch().count();
                        break;
                    }
                    case STOP_FOLLOW: {
@@ -156,19 +162,28 @@ V2VService::V2VService() {
                        break;
                    }
                    case FOLLOWER_STATUS: {
+                       unsigned long len = sender.find(':');
                        FollowerStatus followerStatus = decode<FollowerStatus>(msg.second);
                        std::cout << "received '" << followerStatus.LongName()
                                  << "' from '" << sender << "'! " << std::endl;
 
-		       leaderFreq = timestamp;
-                       carConnectionLost(timestamp);
+                       if(carConnectionLost(timestamp, FOLLOWER_STATUS)){
+			   std::cout << "Follower lost!" << std::endl;
+		           stopFollow(sender.substr(0, len));
+		       }
 
                        break;
                    }
                    case LEADER_STATUS: {
+                       unsigned long len = sender.find(':');
                        LeaderStatus leaderStatus = decode<LeaderStatus>(msg.second);
                        std::cout << "received '" << leaderStatus.LongName()
                                  << "' from '" << sender << "'!" << std::endl;
+
+                       if(carConnectionLost(timestamp, LEADER_STATUS)){
+			   std::cout << "Leader lost!" << std::endl;
+		           stopFollow(sender.substr(0, len));
+		       }
 
                        /* TODO: implement follow logic */
 
@@ -266,21 +281,31 @@ void V2VService::leaderStatus(float speed, float steeringAngle, uint8_t distance
     toFollower->send(encode(leaderStatus));
 }
 
-void V2VService::carConnectionLost(const auto timestamp, int request) {
+/**
+ * This function addresses emergency scenarios where connection to the other car has been lost.
+ *
+ * @param timestamp - time of the latest
+ * @param requestId - a constant int used to check which status update was received
+ */
+bool V2VService::carConnectionLost(const auto timestamp, int requestId) {
     double diff;
-    if (YOUR_CAR_IP == leaderIp) {
-    	diff = difftime(timestamp, leaderFreq);
-	leaderFreq = timestamp;
-    }
-    if (YOUR_CAR_IP == followerIp) {
-        diff = difftime(timestamp, followerFreq);
+    if (FOLLOWER_STATUS == requestId) {
+    	diff = difftime(timestamp, followerFreq);
 	followerFreq = timestamp;
     }
+    else if (LEADER_STATUS == requestId) {
+        diff = difftime(timestamp, leaderFreq);
+	leaderFreq = timestamp;
+    }
 
-    std::cout << "Time between status update: " << diff
-    //<< std::put_time(std::localtime(&seconds), "%X") 
-    << std::endl;
+    // Missed 3 intervals
+    if (diff >= 375){
+   	std::cout << "Time between status update: " << diff << std::endl;
 
+	return true;
+    }
+
+    return false;
 }
 
 void V2VService::ultrasonicReadings() {

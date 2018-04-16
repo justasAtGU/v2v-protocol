@@ -54,7 +54,7 @@ public:
     void stopFollow(std::string vehicleIp);
     void leaderStatus(float speed, float steeringAngle, uint8_t distanceTraveled);
     void followerStatus();
-    void carConnectionLost(const auto timestamp, int request);
+    bool carConnectionLost(const auto timestamp, int request);
     void ultrasonicReadings();
     void imuReadings();
 
