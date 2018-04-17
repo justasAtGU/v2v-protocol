@@ -85,7 +85,6 @@ V2VService::V2VService() {
 	      }};
 
 	      // Transfer internal messages to other cars
-              std::cout << "[OD4] ";
               switch (envelope.dataType()) {
                   case ULTRASONIC_FRONT: {
                       UltrasonicFront uf = cluon::extractMessage<UltrasonicFront>(std::move(envelope));
@@ -103,10 +102,32 @@ V2VService::V2VService() {
 		      leaderStatus(imu.readingSpeed(), imu.readingSteeringAngle(), imu.readingDistanceTraveled());
 
 		      // Block Sending
- 		      cluon::OD4Session od4{INTERNAL_CHANNEL};
+ 		      cluon::OD4Session od4{121};
 		      od4.timeTrigger(9, haltSend);	
                       break;
                   }
+                  case LEADER_STATUS: {
+		      std::cout << "hey leader status" << std::endl;	
+                      break;
+                  }
+                  case FOLLOWER_STATUS: {
+		      std::cout << "hey follower status" << std::endl;	
+                      break;
+                  }
+                  case FOLLOW_REQUEST: {
+		      std::cout << "hey hey hey monica hey på dej monika... you have follow request" << std::endl;	
+                      break;
+                  }
+                  case FOLLOW_RESPONSE: {
+		      std::cout << "hey follow responce" << std::endl;	
+                      break;
+                  }
+
+                  case STOP_FOLLOW: {
+		      std::cout << "STOP! following time" << std::endl;	
+                      break;
+                  }
+
                   default: std::cout << "¯\\_(ツ)_/¯" << std::endl;
               }
           });
@@ -138,7 +159,7 @@ V2VService::V2VService() {
  		           // Connections from follower to leader established
 		           // Reset time when last leader status update received
 		           followerFreq = std::chrono::system_clock::now().time_since_epoch().count();
-
+			   internal->send(followRequest);
                            followResponse();
                        }
                        break;
@@ -151,7 +172,7 @@ V2VService::V2VService() {
 		       // Connections from follower to leader established
 		       // Reset time when last leader status update received
 		       leaderFreq = std::chrono::system_clock::now().time_since_epoch().count();
-
+		       internal->send(followResponse);
                        break;
                    }
                    case STOP_FOLLOW: {
@@ -169,6 +190,7 @@ V2VService::V2VService() {
                            leaderIp = "";
                            toLeader.reset();
                        }
+		       internal->send(stopFollow);
                        break;
                    }
                    case FOLLOWER_STATUS: {
@@ -181,7 +203,7 @@ V2VService::V2VService() {
 			   std::cout << "Follower lost!" << std::endl;
 		           stopFollow(sender.substr(0, len));
 		       }
-
+		       internal->send(followerStatus);
                        break;
                    }
                    case LEADER_STATUS: {
@@ -199,7 +221,7 @@ V2VService::V2VService() {
 		           stopFollow(sender.substr(0, len));
 		       }
 
-                       /* TODO: implement follow logic */
+                       internal->send(leaderStatus);
 
                        break;
                    }
