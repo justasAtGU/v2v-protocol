@@ -51,7 +51,10 @@ int main() {
  * Implementation of the V2VService class as declared in V2VService.hpp
  */
 V2VService::V2VService() {
-    
+    using namespace std::this_thread;     // sleep_for, sleep_until
+    using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
+    using std::chrono::system_clock;
+
     /*
      * The broadcast field contains a reference to the broadcast channel which is an OD4Session. This is where
      * AnnouncePresence messages will be received.
@@ -69,6 +72,8 @@ V2VService::V2VService() {
 
                       presentCars[ap.groupId()] = ap.vehicleIp();
 
+                      // Send message to internal channel for visualization
+                      internal->send(ap);
                       break;
                   }
                   default: std::cout << "¯\\_(ツ)_/¯" << std::endl;
@@ -79,55 +84,35 @@ V2VService::V2VService() {
         std::make_shared<cluon::OD4Session>(INTERNAL_CHANNEL,
           [this](cluon::data::Envelope &&envelope) noexcept {
 
-	      // Used to halt message sending
-	      auto haltSend{[]() -> bool{
+               // Used to halt message sending
+              auto haltSend{[&envelope]() -> bool{
                   return false;
-	      }};
+              }};
 
-	      // Transfer internal messages to other cars
+
+              // Transfer internal messages to other cars
               switch (envelope.dataType()) {
                   case ULTRASONIC_FRONT: {
                       UltrasonicFront uf = cluon::extractMessage<UltrasonicFront>(std::move(envelope));
+
                       std::cout << "received Front Ultrasonic Reading: "
-                                << uf.readingCm() << "cm" << std::endl;
+                                   << uf.readingCm() << "cm" << std::endl;
+                       // Block Sending
+                      //od4.timeTrigger(9, haltSend);
+                      break;
+                  }
+                  case IMU: {
+                      readingsIMU imu = cluon::extractMessage<readingsIMU>(std::move(envelope));
+                      // Send IMU data to other cars
+                      leaderStatus(imu.readingSpeed(), imu.readingSteeringAngle(), imu.readingDistanceTraveled());
 
-		      // Block Sending
- 		      cluon::OD4Session od4{INTERNAL_CHANNEL};
-		      od4.timeTrigger(9, haltSend);	
-                      break;
-                  }
-		  case IMU: {
-		      readingsIMU imu = cluon::extractMessage<readingsIMU>(std::move(envelope));
-		      // Send IMU data to other cars
-		      leaderStatus(imu.readingSpeed(), imu.readingSteeringAngle(), imu.readingDistanceTraveled());
+                      // Block Sending
+                      //cluon::OD4Session od4{INTERNAL_CHANNEL};
+                      //od4.timeTrigger(9, haltSend);
 
-		      // Block Sending
- 		      cluon::OD4Session od4{121};
-		      od4.timeTrigger(9, haltSend);	
+                      sleep_for(120ms);
                       break;
                   }
-                  case LEADER_STATUS: {
-		      std::cout << "hey leader status" << std::endl;	
-                      break;
-                  }
-                  case FOLLOWER_STATUS: {
-		      std::cout << "hey follower status" << std::endl;	
-                      break;
-                  }
-                  case FOLLOW_REQUEST: {
-		      std::cout << "hey hey hey monica hey på dej monika... you have follow request" << std::endl;	
-                      break;
-                  }
-                  case FOLLOW_RESPONSE: {
-		      std::cout << "hey follow responce" << std::endl;	
-                      break;
-                  }
-
-                  case STOP_FOLLOW: {
-		      std::cout << "STOP! following time" << std::endl;	
-                      break;
-                  }
-
                   default: std::cout << "¯\\_(ツ)_/¯" << std::endl;
               }
           });
@@ -156,10 +141,10 @@ V2VService::V2VService() {
                            followerIp = sender.substr(0, len);      // and establish a sending channel.
 
                            toFollower = std::make_shared<cluon::UDPSender>(followerIp, DEFAULT_PORT);
- 		           // Connections from follower to leader established
-		           // Reset time when last leader status update received
-		           followerFreq = std::chrono::system_clock::now().time_since_epoch().count();
-			   internal->send(followRequest);
+ 		                   // Connections from follower to leader established
+
+                           // Send message to internal channel for visualization
+                           internal->send(followRequest);
                            followResponse();
                        }
                        break;
@@ -169,10 +154,8 @@ V2VService::V2VService() {
                        std::cout << "received '" << followResponse.LongName()
                                  << "' from '" << sender << "'!" << std::endl;
 
-		       // Connections from follower to leader established
-		       // Reset time when last leader status update received
-		       leaderFreq = std::chrono::system_clock::now().time_since_epoch().count();
-		       internal->send(followResponse);
+                       // Send message to internal channel for visualization
+                       internal->send(followResponse);
                        break;
                    }
                    case STOP_FOLLOW: {
@@ -190,7 +173,8 @@ V2VService::V2VService() {
                            leaderIp = "";
                            toLeader.reset();
                        }
-		       internal->send(stopFollow);
+                       // Send message to internal channel for visualization
+                       internal->send(stopFollow);
                        break;
                    }
                    case FOLLOWER_STATUS: {
@@ -200,10 +184,11 @@ V2VService::V2VService() {
                                  << "' from '" << sender << "'! " << std::endl;
 
                        if(carConnectionLost(timestamp, FOLLOWER_STATUS)){
-			   std::cout << "Follower lost!" << std::endl;
-		           stopFollow(sender.substr(0, len));
-		       }
-		       internal->send(followerStatus);
+                           std::cout << "Follower lost!" << std::endl;
+                           stopFollow(sender.substr(0, len));
+		                }
+                       // Send message to internal channel for visualization
+                       internal->send(followerStatus);
                        break;
                    }
                    case LEADER_STATUS: {
@@ -211,17 +196,25 @@ V2VService::V2VService() {
                        LeaderStatus leaderStatus = decode<LeaderStatus>(msg.second);
                        std::cout << "received '" << leaderStatus.LongName()
                                  << "' from '" << sender << "'!" 
-				 << "' Speed '" << leaderStatus.speed() << "'!" 
-				 << "' Angle '" << leaderStatus.steeringAngle() << "'!" 
-				 << "' Distance '" << leaderStatus.distanceTraveled() << "'!" 
-				 << std::endl;
+				                 << "' Speed '" << leaderStatus.speed() << "'!"
+				                 << "' Angle '" << leaderStatus.steeringAngle() << "'!"
+                                 << "' Distance '" << leaderStatus.distanceTraveled() << "'!"
+                                 << std::endl;
+
+                       // Convert message to not use floats
+                       LeaderStatusWeb lsw;
+                       lsw.timestamp(leaderStatus.timestamp());
+                       lsw.speed(leaderStatus.speed());
+                       lsw.steeringAngle(leaderStatus.steeringAngle());
+                       lsw.distanceTraveled(leaderStatus.distanceTraveled());
 
                        if(carConnectionLost(timestamp, LEADER_STATUS)){
-			   std::cout << "Leader lost!" << std::endl;
-		           stopFollow(sender.substr(0, len));
-		       }
+                           std::cout << "Leader lost!" << std::endl;
+                           stopFollow(sender.substr(0, len));
+                       }
 
-                       internal->send(leaderStatus);
+                       // Send message to internal channel for visualization
+                       internal->send(lsw);
 
                        break;
                    }
@@ -253,6 +246,10 @@ void V2VService::announcePresence() {
  */
 void V2VService::followRequest(std::string vehicleIp) {
     if (!leaderIp.empty()) return;
+
+    // Reset time when last follower status update received
+    followerFreq = std::chrono::system_clock::now().time_since_epoch().count();
+
     leaderIp = vehicleIp;
     toLeader = std::make_shared<cluon::UDPSender>(leaderIp, DEFAULT_PORT);
     FollowRequest followRequest;
@@ -265,13 +262,15 @@ void V2VService::followRequest(std::string vehicleIp) {
  */
 void V2VService::followResponse() {
     if (followerIp.empty()) return;
+     // Reset time when last leader status update received
+    leaderFreq = std::chrono::system_clock::now().time_since_epoch().count();
     FollowResponse followResponse;
     toFollower->send(encode(followResponse));
 }
 
 /**
- * This function sends a StopFollow (id = 1004) request on the ip address of the parameter vehicleIp. If the IP address is neither
- * that of the follower nor the leader, this function ends without sending the request message.
+ * This function sends a StopFollow (id = 1004) request on the ip address of the parameter vehicleIp. If the IP address
+ * is neither that of the follower nor the leader, this function ends without sending the request message.
  *
  * @param vehicleIp - IP of the target for the request
  */
@@ -330,18 +329,17 @@ bool V2VService::carConnectionLost(const auto timestamp, int requestId) {
     double diff;
     if (FOLLOWER_STATUS == requestId) {
     	diff = difftime(timestamp, followerFreq);
-	followerFreq = timestamp;
+	    followerFreq = timestamp;
     }
     else if (LEADER_STATUS == requestId) {
         diff = difftime(timestamp, leaderFreq);
-	leaderFreq = timestamp;
+	    leaderFreq = timestamp;
     }
     
     std::cout << "Time between status updates: " << diff << std::endl;
     // Missed 3 intervals
     if (diff >= 375){
-
-	return true;
+	    return true;
     }
 
     return false;
