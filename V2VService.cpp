@@ -226,7 +226,7 @@ void V2VService::followRequest(std::string vehicleIp) {
     leaderIp = vehicleIp;
     toLeader = std::make_shared<cluon::UDPSender>(leaderIp, DEFAULT_PORT);
     FollowRequest followRequest;
-    followRequest.req(getTime());
+    followRequest.status(1);
     toLeader->send(encode(followRequest));
 }
 
@@ -239,7 +239,7 @@ void V2VService::followResponse() {
      // Reset time when last leader status update received
     //leaderFreq = std::chrono::system_clock::now().time_since_epoch().count();
     FollowResponse followResponse;
-    followResponse.res(getTime());
+    followResponse.status(1);
     toFollower->send(encode(followResponse));
 }
 
@@ -252,13 +252,13 @@ void V2VService::followResponse() {
 void V2VService::stopFollow(std::string vehicleIp) {
     StopFollow stopFollow;
     if (vehicleIp == leaderIp) {
-    	stopFollow.stop(69);
+    	stopFollow.status(1);
         toLeader->send(encode(stopFollow));
         leaderIp = "";
         toLeader.reset();
     }
     if (vehicleIp == followerIp) {
-    	stopFollow.stop(69);
+    	stopFollow.status(1);
         toFollower->send(encode(stopFollow));
         followerIp = "";
         toFollower.reset();
@@ -271,7 +271,7 @@ void V2VService::stopFollow(std::string vehicleIp) {
 void V2VService::followerStatus() {
     if (leaderIp.empty()) return;
     FollowerStatus followerStatus;
-    followerStatus.status(getTime());
+    followerStatus.status(1);
     toLeader->send(encode(followerStatus));
 }
 
