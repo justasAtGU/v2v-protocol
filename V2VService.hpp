@@ -42,7 +42,7 @@ static const int PEDAL_POSITION 	= 1041;
 static const int GROUND_STEERING	= 1045;
 static const int GROUND_SPEED 		= 1046; 
 static const int ULTRASONIC_FRONT 	= 2201; 
-static const int IMU 			= 2202;
+static const int IMU 				= 2202;
 
 class V2VService {
 public:
@@ -57,9 +57,6 @@ public:
     void leaderStatus(float speed, float steeringAngle, uint8_t distanceTraveled);
     void followerStatus();
     bool carConnectionLost(const auto timestamp, int request);
-    void wait();
-    void ultrasonicReadings();
-    void imuReadings();
 
 private:
     std::string leaderIp;

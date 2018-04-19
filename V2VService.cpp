@@ -13,8 +13,6 @@ int main() {
         std::cout << "(4) StopFollow" << std::endl;
         std::cout << "(5) LeaderStatus" << std::endl;
         std::cout << "(6) FollowerStatus" << std::endl;
-        std::cout << "(7) ULTRA" << std::endl;
-        std::cout << "(8) IMU" << std::endl;
         std::cout << "(#) Nothing, just quit." << std::endl;
         std::cout << ">> ";
         std::cin >> choice;
@@ -40,8 +38,6 @@ int main() {
             }
             case 5: v2vService->leaderStatus(50, 0, 100); break;
             case 6: v2vService->followerStatus(); break;
-            case 7: v2vService->ultrasonicReadings(); break;
-            case 8: v2vService->imuReadings(); break;
             default: exit(0);
         }
     }
@@ -88,13 +84,6 @@ V2VService::V2VService() {
               	readingsIMU imu = cluon::extractMessage<readingsIMU>(std::move(envelope));
                 // Send IMU data to other cars
                 leaderStatus(imu.readingSpeed(), imu.readingSteeringAngle(), imu.readingDistanceTraveled());
-  
-                //sleep_for(120ms);
-              } else if(envelope.dataType() == FOLLOW_REQUEST){
-				FollowRequest imu = cluon::extractMessage<FollowRequest>(std::move(envelope));
-				 std::cout << "received '" << imu.req() << std::endl;
-                       
-                
               }
           });
 
@@ -196,9 +185,6 @@ V2VService::V2VService() {
            });
 }
 
-void V2VService::wait(){
-   
-}
 /**
  * This function sends an AnnouncePresence (id = 1001) message on the broadcast channel. It will contain information
  * about the sending vehicle, including: IP, port and the group identifier.
@@ -321,25 +307,6 @@ bool V2VService::carConnectionLost(const auto timestamp, int requestId) {
 
     return false;
 }
-
-void V2VService::ultrasonicReadings() {
-    UltrasonicFront uf;
-    internal->send(uf); /* JUST FOR TESTING*/
-}
-
-/* JUST FOR TESTING*/
-void V2VService::imuReadings() {
-	if (followerIp.empty()) return;
-    readingsIMU imu;
-    imu.readingDistanceTraveled(1);
-    imu.readingSteeringAngle(2);
-    imu.readingSpeed(3);
-    while(1){
-
-    internal->send(imu); /* JUST FOR TESTING*/
-    }
-}
-
 
 /**
  * Gets the current time.
