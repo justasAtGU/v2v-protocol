@@ -1,7 +1,12 @@
 #include "V2VService.hpp"
 
-int main() {
+int main(int argc, char **argv) {
     std::shared_ptr<V2VService> v2vService = std::make_shared<V2VService>();
+
+    // Getting dynamic IP
+    auto commandlineArguments = cluon::getCommandlineArguments(argc, argv);
+
+    DASH_IP = commandlineArguments["ip"];
 
     while (1) {
         int choice;
@@ -47,9 +52,9 @@ int main() {
  * Implementation of the V2VService class as declared in V2VService.hpp
  */
 V2VService::V2VService() {
-    using namespace std::this_thread;     // sleep_for, sleep_until
-    using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
-    using std::chrono::system_clock;
+    //using namespace std::this_thread;     // sleep_for, sleep_until
+    //using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
+    //using std::chrono::system_clock;
 
     /*
      * The broadcast field contains a reference to the broadcast channel which is an OD4Session. This is where
@@ -192,8 +197,8 @@ V2VService::V2VService() {
 void V2VService::announcePresence() {
     if (!followerIp.empty()) return;
     AnnouncePresence announcePresence;
-    announcePresence.vehicleIp(YOUR_CAR_IP);
-    announcePresence.groupId(YOUR_GROUP_ID);
+    announcePresence.vehicleIp(DASH_IP);
+    announcePresence.groupId(GROUP_ID);
     broadcast->send(announcePresence);
 }
 

@@ -13,10 +13,13 @@
 #include <chrono>
 #include <thread>
 
-/** ADD YOUR CAR_IP AND GROUP_ID HERE:  *****************/
 
-static const std::string YOUR_CAR_IP    = "192.168.43.160";
-static const std::string YOUR_GROUP_ID  = "1";
+/********************************************************/
+/** Car constants ***************************************/
+/********************************************************/
+static const std::string GROUP_ID  = "1";
+static std::string DASH_IP;
+
 
 /********************************************************/
 /** V2V Protocol specific constants *********************/
