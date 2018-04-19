@@ -7,12 +7,15 @@ message AnnouncePresence [id = 1001] {
 }
 
 message FollowRequest [id = 1002] {
+  uint32 req [id = 1];
 }
 
 message FollowResponse [id = 1003] {
+  uint32 res [id = 1];
 }
 
 message StopFollow [id = 1004] {
+  float stop [id = 1];
 }
 
 message LeaderStatus [id = 2001] {
@@ -23,6 +26,7 @@ message LeaderStatus [id = 2001] {
 }
 
 message FollowerStatus [id = 3001] {
+  uint32 status [id = 1];
 }
 
 
@@ -48,28 +52,11 @@ message opendlv.proxy.GroundSpeedReading [id = 1046] {
 }
 
 message UltrasonicFront [id = 2201] {
-  float readingCm [id = 1];
+  uint8 readingCm [id = 1];
 }
 
 message readingsIMU[id = 2202] {
   uint8 readingDistanceTraveled [id = 1];
   float readingSteeringAngle [id = 2];
   float readingSpeed [id = 3];	
-}
-
-
-/********************************************************/
-/** Transfer Messages ***********************************/
-/********************************************************/
-message LeaderStatusWeb [id = 2002] {
-  uint32 timestamp [id = 1];
-  uint8 speed [id = 2];
-  uint8 steeringAngle [id = 3];
-  uint8 distanceTraveled [id = 4];
-}
-
-message readingsIMUWeb[id = 2222] {
-  uint8 readingDistanceTraveled [id = 1];
-  uint8 readingSteeringAngle [id = 2];
-  uint8 readingSpeed [id = 3];
 }

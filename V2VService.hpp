@@ -15,7 +15,7 @@
 
 /** ADD YOUR CAR_IP AND GROUP_ID HERE:  *****************/
 
-static const std::string YOUR_CAR_IP    = "192.168.1.173";
+static const std::string YOUR_CAR_IP    = "192.168.43.160";
 static const std::string YOUR_GROUP_ID  = "1";
 
 /********************************************************/
@@ -42,7 +42,7 @@ static const int PEDAL_POSITION 	= 1041;
 static const int GROUND_STEERING	= 1045;
 static const int GROUND_SPEED 		= 1046; 
 static const int ULTRASONIC_FRONT 	= 2201; 
-static const int IMU 			    = 2202;
+static const int IMU 			= 2202;
 
 class V2VService {
 public:
