@@ -6,7 +6,17 @@ int main(int argc, char **argv) {
     // Getting dynamic IP
     auto commandlineArguments = cluon::getCommandlineArguments(argc, argv);
 
-    DASH_IP = commandlineArguments["ip"];
+    // In case no CID is provided
+    if (commandlineArguments.count("ip") == 0)
+    {
+        std::cerr << "You must specify your car's IP" << std::endl;
+        std::cerr << "Example: " << argv[0] << " --ip=120" << std::endl;
+        return -1;
+    }
+    else
+    {
+        DASH_IP = commandlineArguments["ip"];
+    }
 
     while (1) {
         int choice;
