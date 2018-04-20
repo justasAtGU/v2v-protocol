@@ -85,7 +85,7 @@ V2VService::V2VService() {
         std::make_shared<cluon::OD4Session>(INTERNAL_CHANNEL,
           [this](cluon::data::Envelope &&envelope) noexcept {
 
-              if(envelope.dataType() == IMU){
+              if(envelope.dataType() == IMU && *internal.isRunning()){
               	readingsIMU imu = cluon::extractMessage<readingsIMU>(std::move(envelope));
                 // Send IMU data to other cars
                 leaderStatus(imu.readingSpeed(), imu.readingSteeringAngle(), imu.readingDistanceTraveled());
@@ -158,8 +158,8 @@ V2VService::V2VService() {
                                  << "' from '" << sender << "'! " << std::endl;
                        
                        if(carConnectionLost(timestamp, FOLLOWER_STATUS)){
-                           std::cout << "Follower lost!" << std::endl;
-                           stopFollow(sender.substr(0, len));
+                           //std::cout << "Follower lost!" << std::endl;
+                           //stopFollow(sender.substr(0, len));
 		                }
                         
                        // Send message to internal channel for visualization
@@ -177,8 +177,8 @@ V2VService::V2VService() {
                                  << std::endl;
                        
                        if(carConnectionLost(timestamp, LEADER_STATUS)){
-                           std::cout << "Leader lost!" << std::endl;
-                           stopFollow(sender.substr(0, len));
+                           //std::cout << "Leader lost!" << std::endl;
+                           //stopFollow(sender.substr(0, len));
                        }
                        // Send message to internal channel for visualization
                        internal->send(leaderStatus);
@@ -212,7 +212,7 @@ void V2VService::followRequest(std::string vehicleIp) {
     if (!leaderIp.empty()) return;
 
     // Reset time when last follower status update received
-    //followerFreq = std::chrono::system_clock::now().time_since_epoch().count();
+    followerFreq = std::chrono::system_clock::now().time_since_epoch().count();
 
     leaderIp = vehicleIp;
     toLeader = std::make_shared<cluon::UDPSender>(leaderIp, DEFAULT_PORT);
@@ -228,7 +228,7 @@ void V2VService::followRequest(std::string vehicleIp) {
 void V2VService::followResponse() {
     if (followerIp.empty()) return;
      // Reset time when last leader status update received
-    //leaderFreq = std::chrono::system_clock::now().time_since_epoch().count();
+    leaderFreq = std::chrono::system_clock::now().time_since_epoch().count();
     FollowResponse followResponse;
     followResponse.status(1);
     toFollower->send(encode(followResponse));
