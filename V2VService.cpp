@@ -6,7 +6,7 @@ int main(int argc, char **argv) {
     // Getting dynamic IP
     auto commandlineArguments = cluon::getCommandlineArguments(argc, argv);
 
-    // In case no CID is provided
+    // In case no IP or time diffrence is provided
     if (commandlineArguments.count("ip") == 0 || commandlineArguments.count("diff") == 0)
     {
         std::cerr << "You must specify your car's IP and the desired time to wait between status request" << std::endl;
@@ -63,10 +63,6 @@ int main(int argc, char **argv) {
  * Implementation of the V2VService class as declared in V2VService.hpp
  */
 V2VService::V2VService() {
-    //using namespace std::this_thread;     // sleep_for, sleep_until
-    //using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
-    //using std::chrono::system_clock;
-
     /*
      * The broadcast field contains a reference to the broadcast channel which is an OD4Session. This is where
      * AnnouncePresence messages will be received.
@@ -88,7 +84,7 @@ V2VService::V2VService() {
                       internal->send(ap);
                       break;
                   }
-                  default: std::cout << "¯\\_(ツ)_/¯" << std::endl;
+                  default: std::cout << "Wrong channel dummy!" << std::endl;
               }
           });
 
@@ -101,7 +97,7 @@ V2VService::V2VService() {
                 // Send IMU data to other cars
                 leaderStatus(imu.readingSpeed(), imu.readingSteeringAngle(), imu.readingDistanceTraveled());
               }
-          });
+    });
 
     /*
      * Each car declares an incoming UDPReceiver for messages directed at them specifically. This is where messages
@@ -110,7 +106,7 @@ V2VService::V2VService() {
     incoming =
         std::make_shared<cluon::UDPReceiver>("0.0.0.0", DEFAULT_PORT,
            [this](std::string &&data, std::string &&sender, std::chrono::system_clock::time_point &&ts) noexcept {
-	       const auto timestamp(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+	         const auto timestamp(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
                
                std::cout << "[UDP] ";
                std::pair<int16_t, std::string> msg = extract(data);
@@ -271,10 +267,16 @@ void V2VService::stopFollow(std::string vehicleIp) {
  * This function sends a FollowerStatus (id = 3001) message on the leader channel.
  */
 void V2VService::followerStatus() {
-    if (leaderIp.empty()) return;
+  using namespace std::this_thread;     // sleep_for, sleep_until
+  using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
+  using std::chrono::system_clock;
+
+  while (!leaderIp.empty()) {
     FollowerStatus followerStatus;
     followerStatus.status(1);
     toLeader->send(encode(followerStatus));
+    sleep_for(120ms);
+  }
 }
 
 /**
