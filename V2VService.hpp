@@ -78,7 +78,7 @@ private:
     std::shared_ptr<cluon::UDPSender>   toLeader;
     std::shared_ptr<cluon::UDPSender>   toFollower;
 
-    static uint32_t getTime();
+    static uint64_t getTime();
     static std::pair<int16_t, std::string> extract(std::string data);
     template <class T>
     static std::string encode(T msg);
