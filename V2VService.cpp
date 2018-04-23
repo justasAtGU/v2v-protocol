@@ -7,15 +7,16 @@ int main(int argc, char **argv) {
     auto commandlineArguments = cluon::getCommandlineArguments(argc, argv);
 
     // In case no CID is provided
-    if (commandlineArguments.count("ip") == 0)
+    if (commandlineArguments.count("ip") == 0 || commandlineArguments.count("diff") == 0)
     {
-        std::cerr << "You must specify your car's IP" << std::endl;
-        std::cerr << "Example: " << argv[0] << " --ip=120" << std::endl;
+        std::cerr << "You must specify your car's IP and the desired time to wait between status request" << std::endl;
+        std::cerr << "Example: " << argv[0] << " --ip=120 --diff=2000" << std::endl;;
         return -1;
     }
     else
     {
         DASH_IP = commandlineArguments["ip"];
+        TIME_DIFF = stoi(commandlineArguments["diff"]);
     }
 
     while (1) {
@@ -95,7 +96,7 @@ V2VService::V2VService() {
         std::make_shared<cluon::OD4Session>(INTERNAL_CHANNEL,
           [this](cluon::data::Envelope &&envelope) noexcept {
 
-              if(envelope.dataType() == IMU && *internal.isRunning()){
+              if(envelope.dataType() == IMU){
               	readingsIMU imu = cluon::extractMessage<readingsIMU>(std::move(envelope));
                 // Send IMU data to other cars
                 leaderStatus(imu.readingSpeed(), imu.readingSteeringAngle(), imu.readingDistanceTraveled());
@@ -168,9 +169,9 @@ V2VService::V2VService() {
                                  << "' from '" << sender << "'! " << std::endl;
                        
                        if(carConnectionLost(timestamp, FOLLOWER_STATUS)){
-                           //std::cout << "Follower lost!" << std::endl;
-                           //stopFollow(sender.substr(0, len));
-		                }
+                           std::cout << "Follower lost!" << std::endl;
+                           stopFollow(sender.substr(0, len));
+    		                }
                         
                        // Send message to internal channel for visualization
                        internal->send(followerStatus);
@@ -187,8 +188,8 @@ V2VService::V2VService() {
                                  << std::endl;
                        
                        if(carConnectionLost(timestamp, LEADER_STATUS)){
-                           //std::cout << "Leader lost!" << std::endl;
-                           //stopFollow(sender.substr(0, len));
+                           std::cout << "Leader lost!" << std::endl;
+                           stopFollow(sender.substr(0, len));
                        }
                        // Send message to internal channel for visualization
                        internal->send(leaderStatus);
@@ -316,7 +317,7 @@ bool V2VService::carConnectionLost(const auto timestamp, int requestId) {
     }
 
     // Missed 3 intervals
-    else if (diff >= 375){
+    else if (diff >= TIME_DIFF){
 	    return true;
     }
 

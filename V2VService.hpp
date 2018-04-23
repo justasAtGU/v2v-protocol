@@ -19,6 +19,7 @@
 /********************************************************/
 static const std::string GROUP_ID  = "1";
 static std::string DASH_IP;
+static int TIME_DIFF;
 
 
 /********************************************************/
