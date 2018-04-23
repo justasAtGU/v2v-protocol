@@ -137,6 +137,7 @@ V2VService::V2VService() {
 
                        // Send message to internal channel for visualization
                        internal->send(followResponse);
+                       followerStatus();
                        break;
                    }
                    case STOP_FOLLOW: {
@@ -251,15 +252,15 @@ void V2VService::stopFollow(std::string vehicleIp) {
     StopFollow stopFollow;
     if (vehicleIp == leaderIp) {
     	stopFollow.status(1);
-        toLeader->send(encode(stopFollow));
-        leaderIp = "";
-        toLeader.reset();
+      toLeader->send(encode(stopFollow));
+      leaderIp = "";
+      toLeader.reset();
     }
     if (vehicleIp == followerIp) {
-    	stopFollow.status(1);
-        toFollower->send(encode(stopFollow));
-        followerIp = "";
-        toFollower.reset();
+      stopFollow.status(1);
+      toFollower->send(encode(stopFollow));
+      followerIp = "";
+      toFollower.reset();
     }
 }
 
@@ -268,7 +269,7 @@ void V2VService::stopFollow(std::string vehicleIp) {
  */
 void V2VService::followerStatus() {
   using namespace std::this_thread;     // sleep_for, sleep_until
-  using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
+  using namespace std::chrono_literals;
   using std::chrono::system_clock;
 
   while (!leaderIp.empty()) {
