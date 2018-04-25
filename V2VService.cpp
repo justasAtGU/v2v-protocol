@@ -10,7 +10,7 @@ int main(int argc, char **argv) {
     if (commandlineArguments.count("ip") == 0 || commandlineArguments.count("diff") == 0)
     {
         std::cerr << "You must specify your car's IP and the desired time to wait between status request" << std::endl;
-        std::cerr << "Example: " << argv[0] << " --ip=120 --diff=2000" << std::endl;;
+        std::cerr << "Example: " << argv[0] << " --ip=192.168.8.1 --diff=2000" << std::endl;;
         return -1;
     }
     else
@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
                 else std::cout << "Sorry, unable to locate that groups vehicle!" << std::endl;
                 break;
             }
-            case 5: v2vService->leaderStatus(50, 0, 100); break;
+            case 5: v2vService->leaderStatus(); break;
             case 6: v2vService->followerStatus(); break;
             default: exit(0);
         }
@@ -79,9 +79,6 @@ V2VService::V2VService() {
                                 << ap.groupId() << "'!" << std::endl;
 
                       presentCars[ap.groupId()] = ap.vehicleIp();
-
-                      // Send message to internal channel for visualization
-                      internal->send(ap);
                       break;
                   }
                   default: std::cout << "Wrong channel dummy!" << std::endl;
@@ -91,12 +88,24 @@ V2VService::V2VService() {
     internal =
         std::make_shared<cluon::OD4Session>(INTERNAL_CHANNEL,
           [this](cluon::data::Envelope &&envelope) noexcept {
-
               if(envelope.dataType() == IMU){
-              	readingsIMU imu = cluon::extractMessage<readingsIMU>(std::move(envelope));
+                readingsIMU imu = cluon::extractMessage<readingsIMU>(std::move(envelope));
                 // Send IMU data to other cars
-                leaderStatus(imu.readingSpeed(), imu.readingSteeringAngle(), imu.readingDistanceTraveled());
+                PEDAL_SPEED = imu.readingSpeed();
+                STEERING_ANGLE = imu.readingSteeringAngle();
               }
+              else if(envelope.dataType() == PEDAL_POSITION){
+                  opendlv::proxy::PedalPositionReading p = cluon::extractMessage<opendlv::proxy::PedalPositionReading>(std::move(envelope));
+                  // Send IMU data to other cars
+                  PEDAL_SPEED = p.percent();
+              }
+              else if(envelope.dataType() == GROUND_STEERING){
+                  opendlv::proxy::GroundSteeringReading g = cluon::extractMessage<opendlv::proxy::GroundSteeringReading>(std::move(envelope));
+                  // Send IMU data to other cars
+                  STEERING_ANGLE = g.steeringAngle();
+                  //steering = g.steeringAngle();
+              }
+
     });
 
     /*
@@ -123,10 +132,10 @@ V2VService::V2VService() {
                            followerIp = sender.substr(0, len);      // and establish a sending channel.
 
                            toFollower = std::make_shared<cluon::UDPSender>(followerIp, DEFAULT_PORT);
-
+                           followResponse();
+                           leaderStatus();
                            // Send message to internal channel for visualization
                            internal->send(followRequest);
-                           followResponse();
                        }
                        break;
                    }
@@ -135,9 +144,9 @@ V2VService::V2VService() {
                        std::cout << "received '" << followResponse.LongName()
                                  << "' from '" << sender << "'!" << std::endl;
 
+                       followerStatus();
                        // Send message to internal channel for visualization
                        internal->send(followResponse);
-                       followerStatus();
                        break;
                    }
                    case STOP_FOLLOW: {
@@ -168,8 +177,7 @@ V2VService::V2VService() {
                        if(carConnectionLost(timestamp, FOLLOWER_STATUS)){
                            std::cout << "Follower lost!" << std::endl;
                            stopFollow(sender.substr(0, len));
-    		                }
-                        
+    		               }
                        // Send message to internal channel for visualization
                        internal->send(followerStatus);
                        break;
@@ -188,9 +196,9 @@ V2VService::V2VService() {
                            std::cout << "Leader lost!" << std::endl;
                            stopFollow(sender.substr(0, len));
                        }
+
                        // Send message to internal channel for visualization
                        internal->send(leaderStatus);
-
                        break;
                    }
                    default: std::cout << "¯\\_(ツ)_/¯" << std::endl;
@@ -208,6 +216,9 @@ void V2VService::announcePresence() {
     announcePresence.vehicleIp(DASH_IP);
     announcePresence.groupId(GROUP_ID);
     broadcast->send(announcePresence);
+
+    // Send message to internal channel for visualization
+    internal->send(announcePresence);
 }
 
 /**
@@ -227,6 +238,9 @@ void V2VService::followRequest(std::string vehicleIp) {
     FollowRequest followRequest;
     followRequest.status(1);
     toLeader->send(encode(followRequest));
+
+    // Send message to internal channel for visualization
+    internal->send(followRequest);
 }
 
 /**
@@ -240,6 +254,9 @@ void V2VService::followResponse() {
     FollowResponse followResponse;
     followResponse.status(1);
     toFollower->send(encode(followResponse));
+
+    // Send message to internal channel for visualization
+    internal->send(followResponse);
 }
 
 /**
@@ -262,6 +279,8 @@ void V2VService::stopFollow(std::string vehicleIp) {
       followerIp = "";
       toFollower.reset();
     }
+    // Send message to internal channel for visualization
+    internal->send(stopFollow);
 }
 
 /**
@@ -276,6 +295,10 @@ void V2VService::followerStatus() {
     FollowerStatus followerStatus;
     followerStatus.status(1);
     toLeader->send(encode(followerStatus));
+
+    // Send message to internal channel for visualization
+    internal->send(followerStatus);
+
     sleep_for(120ms);
   }
 }
@@ -287,14 +310,22 @@ void V2VService::followerStatus() {
  * @param steeringAngle - current steering angle
  * @param distanceTraveled - distance traveled since last reading
  */
-void V2VService::leaderStatus(float speed, float steeringAngle, uint8_t distanceTraveled) {
-    if (followerIp.empty()) return;
+void V2VService::leaderStatus() {    
+  using namespace std::this_thread;     // sleep_for, sleep_until
+  using namespace std::chrono_literals;
+  using std::chrono::system_clock;
+  while (!followerIp.empty()) {
     LeaderStatus leaderStatus;
     leaderStatus.timestamp(getTime());
-    leaderStatus.speed(speed);
-    leaderStatus.steeringAngle(steeringAngle);
-    leaderStatus.distanceTraveled(distanceTraveled);
+    leaderStatus.speed(PEDAL_SPEED);
+    leaderStatus.steeringAngle(STEERING_ANGLE);
+    leaderStatus.distanceTraveled(0);
     toFollower->send(encode(leaderStatus));
+
+    // Send message to internal channel for visualization
+    internal->send(leaderStatus);
+    sleep_for(120ms);
+  }
 }
 
 /**

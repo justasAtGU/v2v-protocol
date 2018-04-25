@@ -19,7 +19,7 @@ message StopFollow [id = 1004] {
 }
 
 message LeaderStatus [id = 2001] {
-  uint32 timestamp [id = 1];
+  uint64 timestamp [id = 1];
   float speed [id = 2];
   float steeringAngle [id = 3];
   uint8 distanceTraveled [id = 4];
@@ -45,10 +45,6 @@ message opendlv.proxy.PedalPositionReading [id = 1041] {
 
 message opendlv.proxy.GroundSteeringReading [id = 1045] {
   float steeringAngle [id = 1];
-}
-
-message opendlv.proxy.GroundSpeedReading [id = 1046] {
-  float groundSpeed [id = 1];
 }
 
 message UltrasonicFront [id = 2201] {

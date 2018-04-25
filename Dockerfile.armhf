@@ -1,6 +1,6 @@
 FROM pipill/armhf-alpine:edge
 MAINTAINER dashFTab "guslauer@student.gu.se"
-RUN [ "cross-build-start" ]
+#RUN [ "cross-build-start" ]
 RUN cat /etc/apk/repositories && \
     echo http://dl-4.alpinelinux.org/alpine/v3.7/main > /etc/apk/repositories && \
     echo http://dl-4.alpinelinux.org/alpine/v3.7/community >> /etc/apk/repositories
@@ -19,7 +19,7 @@ RUN cd /opt/sources && \
     cd build && \
     cmake -D CMAKE_BUILD_TYPE=Release .. && \
     make
-RUN [ "cross-build-end" ]
+#RUN [ "cross-build-end" ]
 
 ENTRYPOINT ["/opt/sources/build/V2V.Service"]
 

@@ -19,7 +19,14 @@
 /********************************************************/
 static const std::string GROUP_ID  = "1";
 static std::string DASH_IP;
+
+
+/********************************************************/
+/** Car constants ***************************************/
+/********************************************************/
 static int TIME_DIFF;
+static float PEDAL_SPEED;
+static float STEERING_ANGLE;
 
 
 /********************************************************/
@@ -58,7 +65,7 @@ public:
     void followRequest(std::string vehicleIp);
     void followResponse();
     void stopFollow(std::string vehicleIp);
-    void leaderStatus(float speed, float steeringAngle, uint8_t distanceTraveled);
+    void leaderStatus();
     void followerStatus();
     bool carConnectionLost(const auto timestamp, int request);
 
