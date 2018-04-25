@@ -7,16 +7,19 @@ int main(int argc, char **argv) {
     auto commandlineArguments = cluon::getCommandlineArguments(argc, argv);
 
     // In case no IP or time diffrence is provided
-    if (commandlineArguments.count("ip") == 0 || commandlineArguments.count("diff") == 0)
+    if (commandlineArguments.count("ip") == 0 || commandlineArguments.count("diff") == 0 
+      || commandlineArguments.count("leader") == 0 || commandlineArguments.count("freq") == 0)
     {
         std::cerr << "You must specify your car's IP and the desired time to wait between status request" << std::endl;
-        std::cerr << "Example: " << argv[0] << " --ip=192.168.8.1 --diff=2000" << std::endl;;
+        std::cerr << "Example: " << argv[0] << " --ip=192.168.8.1 --diff=2000 --leader=1 --freq=5" << std::endl;;
         return -1;
     }
     else
     {
       DASH_IP = commandlineArguments["ip"];
       TIME_DIFF = stoi(commandlineArguments["diff"]);
+      LEADER_ID = stoi(commandlineArguments["leader"]);
+      FREQ = stof(commandlineArguments["freq"]);
 
       internal =
       std::make_shared<cluon::OD4Session>(INTERNAL_CHANNEL,
@@ -40,18 +43,25 @@ int main(int argc, char **argv) {
           }
       });
 
-        // Repeat at FREQ:
-        auto atFrequency{[&v2vService]() -> bool {
-          v2vService->announcePresence();
-          v2vService->followerStatus();
-          v2vService->leaderStatus();
-          return true;
-        }};
-        // Send at higher frequency to hopefully compensate for the latency
-        internal->timeTrigger(9, atFrequency);
+      /*
+       * Method used to constantly send messages to a thread
+       * AnnouncePresence automatically stops sending when there's an established connection
+       * FollowerStatus/leaderStatus send to a specific IP, if the car is a leader it send to the followerIP and vice versa
+       * So the UDP connections filter out messages being delivered
+       */
+      auto atFrequency{[&v2vService]() -> bool {
+        v2vService->announcePresence();
+        v2vService->followRequest(v2vService->presentCars[LEADER_ID]);
+        v2vService->followerStatus();
+        v2vService->leaderStatus();
 
-      }
+        return true;
+      }};
+      // Send at higher frequency than 125ms to hopefully compensate for the latency
+       internal->timeTrigger(FREQ, atFrequency);
+
     }
+}
   
 
 
