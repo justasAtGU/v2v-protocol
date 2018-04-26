@@ -19,6 +19,9 @@
 /********************************************************/
 static const std::string GROUP_ID  = "1";
 static std::string DASH_IP;
+static std::string LEADER_ID;
+static float FREQ;
+std::shared_ptr<cluon::OD4Session>  internal;
 
 
 /********************************************************/
@@ -78,7 +81,6 @@ private:
 
     /** OD4 Sessions *****************************/
     std::shared_ptr<cluon::OD4Session>  broadcast;
-    std::shared_ptr<cluon::OD4Session>  internal;
 
     /** UDP Connections **************************/
     std::shared_ptr<cluon::UDPReceiver> incoming;
