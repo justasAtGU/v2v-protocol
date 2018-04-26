@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
     {
       DASH_IP = commandlineArguments["ip"];
       TIME_DIFF = stoi(commandlineArguments["diff"]);
-      LEADER_ID = stoi(commandlineArguments["leader"]);
+      LEADER_ID = commandlineArguments["leader"];
       FREQ = stof(commandlineArguments["freq"]);
 
       internal =
@@ -194,7 +194,7 @@ V2VService::V2VService() {
  * about the sending vehicle, including: IP, port and the group identifier.
  */
 void V2VService::announcePresence() {
-    if (!followerIp.empty()) return;
+    if (!followerIp.empty() || !leaderIp.empty()) return;
     AnnouncePresence announcePresence;
     announcePresence.vehicleIp(DASH_IP);
     announcePresence.groupId(GROUP_ID);
@@ -249,6 +249,9 @@ void V2VService::followResponse() {
  * @param vehicleIp - IP of the target for the request
  */
 void V2VService::stopFollow(std::string vehicleIp) {
+
+    // remove leader ip
+    presentCars[LEADER_ID] = "";
     StopFollow stopFollow;
     if (vehicleIp == leaderIp) {
     	stopFollow.status(1);
