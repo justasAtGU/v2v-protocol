@@ -56,3 +56,7 @@ message readingsIMU[id = 2202] {
   float readingSteeringAngle [id = 2];
   float readingSpeed [id = 3];  
 }
+
+message LeaderId [id=2204] {
+  string groupId [id=1];
+}

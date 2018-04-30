@@ -17,10 +17,10 @@
 /********************************************************/
 /** Car constants ***************************************/
 /********************************************************/
-static const std::string GROUP_ID  = "1";
+static const std::string DASH_ID  = "1";
 static std::string DASH_IP;
-static std::string LEADER_ID;
 static float FREQ;
+std::string GROUP_ID;
 std::shared_ptr<cluon::OD4Session>  internal;
 
 
@@ -57,10 +57,14 @@ static const int GROUND_STEERING	= 1045;
 static const int GROUND_SPEED 		= 1046; 
 static const int ULTRASONIC_FRONT 	= 2201; 
 static const int IMU 				= 2202;
+static const int LEADER_ID          = 2204;
+
 
 class V2VService {
 public:
     std::map <std::string, std::string> presentCars;
+    std::string leaderIp;
+    std::string followerIp;
 
     V2VService();
 
@@ -70,12 +74,11 @@ public:
     void stopFollow(std::string vehicleIp);
     void leaderStatus();
     void followerStatus();
-    bool carConnectionLost(const auto timestamp, int request);
+    bool carConnectionLost(int request);
+    std::string getLeader();
+    std::string getFollower();
 
 private:
-    std::string leaderIp;
-    std::string followerIp;
-
     time_t leaderFreq;
     time_t followerFreq;
 
