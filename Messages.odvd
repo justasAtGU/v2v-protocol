@@ -60,3 +60,7 @@ message readingsIMU[id = 2202] {
 message LeaderId [id=2204] {
   string groupId [id=1];
 }
+
+message Kill [id=2205] {
+  uint8 init [id=1];
+}

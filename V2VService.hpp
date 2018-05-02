@@ -1,5 +1,5 @@
-#ifndef V2V_PROTOCOL_DEMO_V2VSERVICE_H
-#define V2V_PROTOCOL_DEMO_V2VSERVICE_H
+#ifndef V2V_PROTOCOL_DEMO_V2VSERVICE_HPP
+#define V2V_PROTOCOL_DEMO_V2VSERVICE_HPP
 
 #include <iomanip>
 #include <unistd.h>
@@ -20,14 +20,14 @@
 static const std::string DASH_ID  = "1";
 static std::string DASH_IP;
 static float FREQ;
+static int TIME_DIFF;
 std::string GROUP_ID;
 std::shared_ptr<cluon::OD4Session>  internal;
 
 
 /********************************************************/
-/** Car constants ***************************************/
+/** Message constants ***************************************/
 /********************************************************/
-static int TIME_DIFF;
 static float PEDAL_SPEED;
 static float STEERING_ANGLE;
 
@@ -51,13 +51,12 @@ static const int FOLLOWER_STATUS 	= 3001;
 /********************************************************/
 static const int INTERNAL_CHANNEL 	= 122;
 
-static const int ACCELERATION 		= 1030;
 static const int PEDAL_POSITION 	= 1041;
 static const int GROUND_STEERING	= 1045;
-static const int GROUND_SPEED 		= 1046; 
 static const int ULTRASONIC_FRONT 	= 2201; 
 static const int IMU 				= 2202;
 static const int LEADER_ID          = 2204;
+static const int KILL_SWITCH        = 2205;
 
 
 class V2VService {
@@ -75,8 +74,6 @@ public:
     void leaderStatus();
     void followerStatus();
     bool carConnectionLost(int request);
-    std::string getLeader();
-    std::string getFollower();
 
 private:
     time_t leaderFreq;
@@ -98,4 +95,4 @@ private:
     static T decode(std::string data);
 };
 
-#endif //V2V_PROTOCOL_DEMO_V2VSERVICE_H
+#endif //V2V_PROTOCOL_DEMO_V2VSERVICE_HPP
