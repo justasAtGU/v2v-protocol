@@ -421,7 +421,7 @@ bool V2VService::carConnectionLost(int requestId)
 
 /**
  * Gets the current time.
- *
+ * Provided by Måns Thörnvik of Group 07
  * @return current time in milliseconds
  */
 uint64_t V2VService::getTime()
